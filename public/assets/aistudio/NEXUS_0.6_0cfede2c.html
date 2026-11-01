@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1018">
+<title>NEXUS 0.6</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1018;--panel:#141c28;--panel2:#192536;--line:#29384c;--text:#e7edf7;--muted:#91a0b5;--blue:#64a9ff;--blue2:#287ac9;--green:#68d9a1;--red:#ff8585;--amber:#f2c572}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input,textarea{font:inherit}button{cursor:pointer}.app{min-height:100dvh;display:flex;flex-direction:column}
+header{height:62px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#101722;position:sticky;top:0;z-index:5}
+.brand{font-weight:800;letter-spacing:4px;font-size:21px;color:var(--blue)}.brand small{display:block;font-size:9px;letter-spacing:1.6px;color:var(--muted);font-weight:500;margin-top:-3px}
+.pill{font-size:11px;border:1px solid #285a47;color:var(--green);padding:4px 9px;border-radius:20px;background:transparent;cursor:pointer}
+.layout{width:100%;max-width:1160px;margin:0 auto;flex:1;display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100dvh - 90px)}
+aside{border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:8px;background:#0f1621;min-height:0}
+.nav{display:grid;gap:5px}.navbtn,.side-action{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:10px 12px;border-radius:9px}
+.navbtn.active,.navbtn:hover,.side-action:hover{background:var(--panel2);border-color:var(--line);color:var(--text)}.navbtn.active{color:var(--blue)}
+.side-label{font-size:10px;color:#718198;letter-spacing:1.4px;margin:16px 10px 3px}.side-bottom{margin-top:auto;display:grid;gap:7px}
+.search{width:100%;background:#0e1621;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:9px;font-size:12px}
+.side-chats{display:grid;gap:7px;overflow:auto;max-height:38vh}.chat-item{display:flex;align-items:center;gap:5px;padding:7px;background:#101a27;border:1px solid var(--line);border-radius:8px}
+.chat-item .open-chat{background:none;border:0;color:var(--text);text-align:left;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.chat-item .delete-one{border:0;background:transparent;color:var(--muted);padding:4px}.chat-item.current{border-color:#3978b8}
+main{min-width:0;display:flex;flex-direction:column;min-height:calc(100dvh - 90px)}.view{display:none;flex:1;min-height:0}.view.active{display:flex;flex-direction:column}
+.chat-top{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}.chat-title{font-weight:650;overflow-wrap:anywhere}
+.subtle{font-size:11px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px 11px;font-size:12px}
+.btn.primary{background:var(--blue2);border-color:var(--blue2);color:white}.btn.danger{color:var(--red)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px}.message{max-width:min(82%,680px);padding:12px 14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.message.user{align-self:flex-end;background:#18385b;border:1px solid #28527d}.message.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+.sender{font-size:10px;letter-spacing:1px;color:var(--blue);margin-bottom:5px;font-weight:700}
+.op-card{align-self:flex-start;max-width:min(88%,680px);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.op-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.op-name{font-weight:700;font-size:13px}.risk{font-size:10px;border-radius:20px;padding:3px 9px;letter-spacing:.5px}
+.risk.low{color:var(--green);border:1px solid #285a47}.risk.medium{color:var(--amber);border:1px solid #6b5a2a}.risk.high{color:var(--red);border:1px solid #6b2a2a}
+.op-params{background:#0e1621;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11.5px;color:var(--muted);margin:6px 0}
+.op-status{font-size:11px;margin-top:7px}.op-status.pending{color:var(--amber)}.op-status.approved{color:var(--green)}.op-status.denied{color:var(--red)}
+.composer-wrap{padding:12px 18px 16px;border-top:1px solid var(--line);background:#101722}.composer{display:flex;gap:8px;max-width:850px;margin:auto}
+.composer input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text);outline:none}.composer input:focus{border-color:var(--blue)}
+.note{text-align:center;color:var(--muted);font-size:10px;margin-top:7px}.panel{margin:20px;max-width:850px;width:calc(100% - 40px);align-self:center;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px}
+.panel.wide{max-width:900px}.panel h2{font-size:18px;margin:0 0 5px}.panel p{color:var(--muted);font-size:13px}
+.field{display:grid;gap:6px;margin:14px 0}.field label{font-size:12px;color:var(--muted)}.field input,.field textarea{width:100%;background:#0e1621;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:10px}
+.statusbox{padding:12px;border-radius:9px;background:#101a27;border:1px solid var(--line);font-size:12px;color:var(--muted);margin:12px 0}.statusbox strong{color:var(--text)}
+.file-input{display:none}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#101a27;border:1px solid var(--line);padding:12px;border-radius:8px;display:grid}.stat strong{font-size:20px;color:var(--blue)}.stat span{font-size:11px;color:var(--muted)}
+.log-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:9px 10px;background:#101a27;border:1px solid var(--line);border-radius:8px;font-size:12px}
+.log-row .lname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.log-list{display:grid;gap:7px;margin-top:10px;max-height:52vh;overflow:auto}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.toggle-row:last-child{border-bottom:0}
+.toggle{width:40px;height:22px;border-radius:20px;background:#223047;border:1px solid var(--line);position:relative;padding:0}.toggle.on{background:#1c4a35;border-color:#285a47}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:left .12s}.toggle.on::after{left:20px;background:var(--green)}
+footer{padding:9px;text-align:center;color:#64748b;font-size:10px;border-top:1px solid var(--line)}
+.term-wrap{background:#070b12;border:1px solid var(--line);border-radius:9px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;max-height:48vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.term-line{white-space:pre-wrap;overflow-wrap:anywhere}
+.term-line.cmd{color:var(--blue)}.term-line.cmd::before{content:"$ "}
+.term-line.out{color:#c7d4e6}.term-line.blocked{color:var(--red)}.term-line.meta{color:var(--muted);font-size:11px}
+.modal-overlay{position:fixed;inset:0;background:rgba(5,8,14,.72);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px;max-width:380px;width:100%}
+.modal-box input{width:100%;background:#0e1621;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:10px;margin-top:4px}
+@media(max-width:700px){.layout{display:flex;flex-direction:column}aside{order:2;border-right:0;border-top:1px solid var(--line);padding:6px;display:flex;flex-direction:column;position:sticky;bottom:0;z-index:4}.nav{display:flex;overflow:auto}.navbtn{min-width:68px;text-align:center;padding:9px 5px;font-size:11px}.side-label,.side-bottom,.search,.side-chats{display:none}main{order:1;min-height:calc(100dvh - 140px)}.message,.op-card{max-width:92%}.chat-top{padding:11px 12px;align-items:flex-start}.messages{padding:14px}.composer-wrap{padding:10px 12px}.chat-top .actions{justify-content:flex-end}.chat-top .btn{padding:7px 8px;font-size:11px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">NEXUS<small>LOCAL-FIRST ENVIRONMENT</small></div>
+  <button class="pill" id="modeBadge" type="button" title="Tap to toggle online/offline mode">● OFFLINE · DEMO</button>
+</header>
+<div class="layout">
+<aside>
+  <nav class="nav">
+    <button class="navbtn active" data-view="chat">◈ &nbsp;Chat</button>
+    <button class="navbtn" data-view="terminal">⌁ &nbsp;Terminal</button>
+    <button class="navbtn" data-view="files">▦ &nbsp;Files</button>
+    <button class="navbtn" data-view="env">🐍 &nbsp;Environments</button>
+    <button class="navbtn" data-view="agents">🤖 &nbsp;Agents</button>
+    <button class="navbtn" data-view="security">🛡 &nbsp;Security</button>
+    <button class="navbtn" data-view="data">▤ &nbsp;Data</button>
+    <button class="navbtn" data-view="settings">⚙ &nbsp;Settings</button>
+  </nav>
+  <div class="side-label">CONVERSATIONS</div>
+  <input class="search" id="chatSearch" placeholder="Search conversations…" aria-label="Search conversations">
+  <div id="sideChats" class="side-chats"></div>
+  <div class="side-bottom">
+    <button class="side-action" id="newChatSide">＋ New conversation</button>
+    <div class="subtle" style="padding:5px 10px">0.6 · Specialized agents</div>
+  </div>
+</aside>
+<main>
+<section class="view active" id="view-chat">
+  <div class="chat-top">
+    <div class="title-wrap">
+      <div class="chat-title" id="currentTitle">New conversation</div>
+      <div class="subtle" id="chatSubtitle">NEXUS assistant · demonstration provider</div>
+    </div>
+    <div class="actions">
+      <select class="btn" id="agentSelect" aria-label="Active agent"></select>
+      <button class="btn" id="renameChat">Rename</button>
+      <button class="btn" id="newChat">＋ New</button>
+      <button class="btn danger" id="deleteChat">Delete</button>
+    </div>
+  </div>
+  <div class="messages" id="messages"></div>
+  <div class="composer-wrap">
+    <div class="composer"><input id="prompt" placeholder="Tell NEXUS what you want to do…" autocomplete="off"><button class="btn primary" id="send">Send</button></div>
+    <div class="note">Offline demo · No network calls · Operations are proposed, approved and simulated — nothing real is executed</div>
+  </div>
+</section>
+<section class="view" id="view-terminal">
+  <div class="panel wide">
+    <h2>Terminal</h2>
+    <div class="statusbox"><strong>Sandboxed simulation.</strong><br>Commands are parsed, matched against the same operation registry the AI uses, and require your approval. Execution is simulated — no real shell, filesystem or network access exists in this build.</div>
+    <div class="term-wrap" id="termOut"></div>
+    <div class="composer" style="margin-top:10px">
+      <input id="termInput" placeholder="Type a command… (e.g. mkdir workspace)" autocomplete="off">
+      <button class="btn primary" id="termSend">Run</button>
+    </div>
+  </div>
+</section>
+<section class="view" id="view-files">
+  <div class="panel wide">
+    <h2>Files</h2>
+    <p>A simulated view of the NEXUS/workspaces folder. Items appear here once you approve a create_workspace, write_file or install_package operation in Chat or Terminal — nothing is written to a real filesystem.</p>
+    <div class="log-list" id="filesList"></div>
+  </div>
+</section>
+<section class="view" id="view-env">
+  <div class="panel wide">
+    <h2>Environments</h2>
+    <div class="statusbox"><strong>Python interpreter: not connected.</strong><br>Milestone 0.5 calls for a real Python/Linux userspace with package management — that needs a managed runtime (PRoot-style or similar) that a browser page genuinely can't host. What's here is the package-tracking half: every approved install_package operation is recorded below, the same pattern Files uses for create_workspace/write_file.</div>
+    <div class="field"><label>Installed packages (simulated)</label>
+      <div class="log-list" id="envList"></div>
+    </div>
+  </div>
+</section>
+<section class="view" id="view-agents">
+  <div class="panel wide">
+    <h2>Agents</h2>
+    <p>Each agent is scoped to categories from the same policy registry Security uses. Pick the active agent from the selector above the Chat composer — a proposal outside that agent's scope is declined with a suggestion of which agent to switch to, instead of silently happening anyway.</p>
+    <div class="log-list" id="agentList"></div>
+  </div>
+</section>
+<section class="view" id="view-security">
+  <div class="panel wide">
+    <h2>Security &amp; Permissions</h2>
+    <p>Every operation the AI proposes passes through the policy engine. Nothing executes without your approval, and every decision is written to the audit log below. This is the 0.1.3 foundation — real execution still does not happen anywhere in this prototype.</p>
+    <div class="field"><label>Permission categories</label>
+      <div id="permToggles"></div>
+    </div>
+    <div class="field"><label>Audit log (<span id="logCount">0</span> entries)</label>
+      <div class="actions"><button class="btn" id="clearLog">Clear log</button></div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </div>
+</section>
+<section class="view" id="view-data">
+  <div class="panel wide">
+    <h2>NEXUS Data Manager</h2>
+    <p><strong>nexus.data</strong> is the portable user-data file. This browser prototype does not silently write to browser storage.</p>
+    <div class="statusbox" id="dataStatus"><strong>Session data is in memory.</strong><br>Export to keep a copy. Import it again after reopening this prototype.</div>
+    <div class="actions">
+      <button class="btn primary" id="exportData">Export nexus.data</button>
+      <button class="btn" id="importData">Import nexus.data</button>
+      <input class="file-input" type="file" id="filePicker" accept=".data,.json,application/json">
+    </div>
+    <div class="field"><label>Current data</label><div class="stat-grid">
+      <div class="stat"><strong id="conversationCount">0</strong><span>Conversations</span></div>
+      <div class="stat"><strong id="messageCount">0</strong><span>Messages</span></div>
+      <div class="stat"><strong id="schemaVersion">3</strong><span>Schema version</span></div>
+    </div></div>
+    <div class="field"><label>Import behavior</label><p>Import is validated before it changes the current session. You can replace the current data or merge imported conversations. Invalid files leave your current session untouched.</p></div>
+    <div class="field"><label>Local autosave (this browser only)</label>
+      <div class="statusbox" id="autosaveStatus">Checking local storage…</div>
+      <div class="actions">
+        <button class="btn" id="restoreBackup">Restore previous autosave</button>
+        <button class="btn danger" id="clearAutosave">Clear local autosave</button>
+      </div>
+    </div>
+    <div class="statusbox"><strong>Planned native folder structure</strong><br>NEXUS/<br>├── nexus.data<br>├── workspaces/<br>├── tools/<br>├── downloads/<br>├── models/<br>├── logs/<br>└── backups/</div>
+    <p>Native Android storage will use a user-selected folder through Android's document picker. This browser build only demonstrates portable import/export; it does not yet have direct folder access.</p>
+  </div>
+</section>
+<section class="view" id="view-settings">
+  <div class="panel">
+    <h2>Settings</h2>
+    <div class="field"><label>Operating mode</label><input value="Offline-first · Online AI not connected" readonly></div>
+    <div class="field"><label>AI provider</label>
+      <div class="toggle-row">
+        <div>Live Claude (online — preview only)</div>
+        <button class="toggle" id="providerToggle" type="button" aria-label="Toggle online mode"></button>
+      </div>
+    </div>
+    <div class="statusbox"><strong>About online mode.</strong><br>Live Claude calls the real Anthropic API and only works while you're testing NEXUS here, inside Claude's own chat preview — the platform wires that one call through automatically. Once this page is published as a standalone link, or built as the native Android app, that network path is gone: a published page's sandboxing blocks all outbound requests (not just this one), and the native app will need its own HTTP client and a real provider-abstraction layer, exactly as the original spec's Section 6 describes — interchangeable providers, online providers only when the user explicitly configures one (e.g. supplies their own API key in Settings on-device, never hardcoded). That part is genuinely 1.0 work, not something a browser page can shortcut.</div>
+    <div class="field"><label>Minimum Android target</label><input value="Android 9 · API 28 (planned native app)" readonly></div>
+    <div class="statusbox"><strong>Privacy</strong><br>No network requests are made. No API keys are requested. Chat data remains in memory until you export it.</div>
+    <div class="statusbox"><strong>Build architecture</strong><br>UI, state, data schema, validation, demo provider, policy engine and audit log are separated into individual JavaScript modules. The prototype still runs without a backend.</div>
+    <button class="btn" id="aboutBtn">About this build</button>
+    <p id="aboutText" hidden>NEXUS 0.6 adds specialized agents: five scoped personas (Developer, System, Security, Data, Research) from the original spec's agent table, each restricted to specific policy categories. Switch the active agent per conversation from the selector above the composer — a request outside that agent's scope is declined with a pointer to the right agent, rather than silently executing anyway. A Live Claude provider is also available in Settings: it calls the real Anthropic API, but only works inside Claude's own chat preview — publishing this page or building the native app removes that network path entirely, by design of each environment's sandboxing. Builds on 0.5's Environments view, 0.4's Files view and dialog fixes, 0.3's execution engine, 0.2's local autosave and 0.1.3's policy engine, permissions and audit log.</p>
+  </div>
+</section>
+</main>
+</div>
+<footer>NEXUS 0.6 · DEVELOPMENT BUILD · LOCAL-FIRST · DEMO INTELLIGENCE</footer>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div id="modalTitle" style="font-weight:700;margin-bottom:6px"></div>
+    <div id="modalMessage" class="subtle" style="margin-bottom:10px;white-space:pre-wrap"></div>
+    <input id="modalInput" style="display:none">
+    <div class="actions" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn" id="modalCancel">Cancel</button>
+      <button class="btn primary" id="modalConfirm">OK</button>
+    </div>
+  </div>
+</div>
+<script>
+/* NEXUS schema module: pure data creation, migration and validation. */
+window.Nexus = window.Nexus || {};
+Nexus.Schema = (() => {
+  "use strict";
+  const VERSION = 5;
+  const MAX_CONVERSATIONS = 500;
+  const MAX_MESSAGES_PER_CONVERSATION = 10000;
+  const MAX_TEXT = 200000;
+  const MAX_TOTAL_TEXT = 8 * 1024 * 1024;
+  const MAX_LOG = 2000;
+  const MAX_TERMINAL = 1000;
+  const MAX_WORKSPACE_ITEMS = 500;
+
+  const now = () => new Date().toISOString();
+  const id = () => "nx_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 9);
+
+  function defaultPermissions() {
+    return {filesystem:false, packages:false, network:false, workspace:true};
+  }
+  function welcomeMessage() {
+    return {id:id(), role:"assistant", content:"Welcome to NEXUS 0.1.3.\\n\\nThis build adds the security foundation: a policy engine, permission manager and audit log. Operations the AI proposes now require your explicit approval before they are even simulated as done.\\n\\nAI: DEMO ONLY\\nTERMINAL: NOT CONNECTED\\nNETWORK: DISABLED", createdAt:now()};
+  }
+  function newConversation() {
+    const stamp = now();
+    return {id:id(), title:"New conversation", createdAt:stamp, updatedAt:stamp, agentId:"developer", messages:[welcomeMessage()]};
+  }
+  function initialState() {
+    const first = newConversation();
+    return {schemaVersion:VERSION, app:"NEXUS", preferences:{mode:"offline",theme:"dark",provider:"demo"}, permissions:defaultPermissions(), auditLog:[], terminal:{entries:[]}, workspace:{items:[]}, activeConversationId:first.id, conversations:[first]};
+  }
+  function migrate(input) {
+    if (!input || input.format !== "nexus.data") throw new Error("This is not a NEXUS data file.");
+    const base = {format:"nexus.data", schemaVersion:VERSION, app:"NEXUS",
+      preferences:input.preferences || {mode:"offline",theme:"dark"},
+      permissions:input.permissions || defaultPermissions(),
+      auditLog:Array.isArray(input.auditLog)?input.auditLog.slice(0,MAX_LOG):[],
+      terminal:(input.terminal && Array.isArray(input.terminal.entries)) ? {entries:input.terminal.entries.slice(0,MAX_TERMINAL)} : {entries:[]},
+      workspace:(input.workspace && Array.isArray(input.workspace.items)) ? {items:input.workspace.items.slice(0,MAX_WORKSPACE_ITEMS)} : {items:[]},
+      activeConversationId:input.activeConversationId || input.conversations?.[0]?.id || null,
+      conversations:input.conversations};
+    if (Number.isInteger(input.schemaVersion) && input.schemaVersion >= 1 && input.schemaVersion <= VERSION) return base;
+    throw new Error("Unsupported schema version: " + String(input.schemaVersion));
+  }
+  function validate(input) {
+    const data = migrate(input);
+    if (!Array.isArray(data.conversations) || data.conversations.length < 1 || data.conversations.length > MAX_CONVERSATIONS) throw new Error("Conversation count is outside the allowed range.");
+    const ids = new Set();
+    let totalText = 0;
+    for (const c of data.conversations) {
+      if (!c || typeof c.id !== "string" || !c.id || ids.has(c.id)) throw new Error("A conversation has a missing or duplicate ID.");
+      ids.add(c.id);
+      if (typeof c.title !== "string" || c.title.length > 200) throw new Error("A conversation title is invalid or too long.");
+      if (!Array.isArray(c.messages) || c.messages.length > MAX_MESSAGES_PER_CONVERSATION) throw new Error("A conversation contains too many messages.");
+      for (const m of c.messages) {
+        const okRole = ["user","assistant"].includes(m.role);
+        if (!m || typeof m.id !== "string" || (!okRole && m.type!=="operation")) throw new Error("A message is invalid.");
+        if (okRole) {
+          if (typeof m.content !== "string" || m.content.length > MAX_TEXT) throw new Error("A message is invalid or too large.");
+          totalText += m.content.length;
+          if (totalText > MAX_TOTAL_TEXT) throw new Error("The imported text exceeds the 8 MB safety limit.");
+        }
+      }
+    }
+    if (!ids.has(data.activeConversationId)) data.activeConversationId = data.conversations[0].id;
+    if (!data.preferences || typeof data.preferences !== "object" || Array.isArray(data.preferences)) data.preferences = {mode:"offline",theme:"dark"};
+    if (!data.permissions || typeof data.permissions !== "object") data.permissions = defaultPermissions();
+    if (!Array.isArray(data.auditLog)) data.auditLog = [];
+    if (!data.terminal || !Array.isArray(data.terminal.entries)) data.terminal = {entries:[]};
+    else if (data.terminal.entries.length > MAX_TERMINAL) data.terminal.entries = data.terminal.entries.slice(0, MAX_TERMINAL);
+    if (!data.workspace || !Array.isArray(data.workspace.items)) data.workspace = {items:[]};
+    else if (data.workspace.items.length > MAX_WORKSPACE_ITEMS) data.workspace.items = data.workspace.items.slice(0, MAX_WORKSPACE_ITEMS);
+    return data;
+  }
+  return {VERSION, MAX_LOG, MAX_TERMINAL, MAX_WORKSPACE_ITEMS, now, id, defaultPermissions, newConversation, initialState, migrate, validate};
+})();
+</script>
+<script>
+/* NEXUS policy module: operation registry + risk classification. Pure functions, no side effects. */
+window.Nexus = window.Nexus || {};
+Nexus.Policy = (() => {
+  "use strict";
+  // The operation registry: the only operations NEXUS's AI is allowed to *propose*.
+  // Nothing outside this list can ever be proposed, and proposing is not executing.
+  const REGISTRY = {
+    "create_workspace":  {label:"Create workspace folder", category:"filesystem", risk:"low"},
+    "write_file":        {label:"Write a file in the workspace", category:"filesystem", risk:"medium"},
+    "install_package":   {label:"Install a package", category:"packages", risk:"medium"},
+    "run_script":        {label:"Run a script", category:"filesystem", risk:"high"},
+    "network_fetch":     {label:"Make a network request", category:"network", risk:"high"},
+  };
+  function describe(opName) { return REGISTRY[opName] || null; }
+  // evaluate: given the current permission map, decide what the policy engine does with a proposed op.
+  function evaluate(opName, permissions) {
+    const spec = describe(opName);
+    if (!spec) return {allowed:false, reason:"Operation is not in the registry.", requiresConfirmation:true, risk:"high"};
+    const categoryOn = !!permissions[spec.category];
+    // Every operation always requires explicit user confirmation in this prototype, regardless
+    // of permission state — permissions only gate whether approval is even possible.
+    if (!categoryOn) return {allowed:false, reason:`"${spec.category}" permission is off. Enable it in Security to allow this category.`, requiresConfirmation:true, risk:spec.risk, category:spec.category, label:spec.label};
+    return {allowed:true, reason:"Within policy. Awaiting your explicit approval.", requiresConfirmation:true, risk:spec.risk, category:spec.category, label:spec.label};
+  }
+  return {REGISTRY, describe, evaluate};
+})();
+</script>
+<script>
+/* NEXUS agents module: specialized agent registry, each scoped to policy categories.
+   Mirrors the original NEXUS spec's agent table (Research/Developer/System/Security/Data). */
+window.Nexus = window.Nexus || {};
+Nexus.Agents = (() => {
+  "use strict";
+  const AGENTS = {
+    developer:{label:"Developer Agent", desc:"Assist with code and debugging.", categories:["workspace","filesystem"]},
+    system:{label:"System Agent", desc:"Manage approved environment operations.", categories:["packages","network","filesystem","workspace"]},
+    security:{label:"Security Agent", desc:"Explain security concepts and assess authorized environments.", categories:[]},
+    data:{label:"Data Agent", desc:"Organize files and structured information.", categories:["filesystem"]},
+    research:{label:"Research Agent", desc:"Research and organize information.", categories:[]}
+  };
+  const DEFAULT="developer";
+  function list(){ return Object.keys(AGENTS).map(id=>({id,...AGENTS[id]})); }
+  function get(id){ return AGENTS[id]||AGENTS[DEFAULT]; }
+  function allows(id,opName){ const ag=get(id); const spec=Nexus.Policy.describe(opName); if(!spec) return false; return ag.categories.includes(spec.category); }
+  function bestFor(opName){ const spec=Nexus.Policy.describe(opName); if(!spec) return null; for(const key of Object.keys(AGENTS)){ if(AGENTS[key].categories.includes(spec.category)) return AGENTS[key].label; } return null; }
+  return {DEFAULT, list, get, allows, bestFor};
+})();
+</script>
+<script>
+/* NEXUS audit module: append-only log of every operation decision. */
+window.Nexus = window.Nexus || {};
+Nexus.Audit = (() => {
+  "use strict";
+  function entry(opName, status, detail) {
+    return {id:Nexus.Schema.id(), opName, status, detail, at:Nexus.Schema.now()};
+  }
+  return {entry};
+})();
+</script>
+<script>
+/* NEXUS store module: in-memory state and safe import/merge/export. */
+window.Nexus = window.Nexus || {};
+Nexus.Store = (() => {
+  "use strict";
+  let state = Nexus.Schema.initialState();
+  let dirty = true;
+  const clone = value => JSON.parse(JSON.stringify(value));
+  function getState() { return state; }
+  function isDirty() { return dirty; }
+  function setDirty(value=true) { dirty = value; }
+  function update(mutator) { mutator(state); dirty = true; }
+  function logOp(opName, status, detail) {
+    state.auditLog.unshift(Nexus.Audit.entry(opName, status, detail));
+    if (state.auditLog.length > Nexus.Schema.MAX_LOG) state.auditLog.length = Nexus.Schema.MAX_LOG;
+    dirty = true;
+  }
+  function payload() {
+    return {format:"nexus.data", schemaVersion:Nexus.Schema.VERSION, app:"NEXUS", exportedAt:Nexus.Schema.now(), preferences:clone(state.preferences), permissions:clone(state.permissions), auditLog:clone(state.auditLog), terminal:clone(state.terminal), workspace:clone(state.workspace), activeConversationId:state.activeConversationId, conversations:clone(state.conversations)};
+  }
+  function replace(candidate) {
+    const checked = Nexus.Schema.validate(candidate);
+    state = checked; dirty = false;
+    return state;
+  }
+  function merge(candidate) {
+    const checked = Nexus.Schema.validate(candidate);
+    const existing = new Set(state.conversations.map(c=>c.id));
+    const incoming = checked.conversations.map(c => {
+      const copy = clone(c);
+      if (existing.has(copy.id)) copy.id = Nexus.Schema.id();
+      return copy;
+    });
+    const combined = [...state.conversations, ...incoming];
+    if (combined.length > 500) throw new Error("Merge would exceed the 500-conversation limit.");
+    state.conversations = combined;
+    state.activeConversationId = incoming[0]?.id || state.activeConversationId;
+    dirty = true;
+    return state;
+  }
+  function addWorkspaceItem(kind,name){
+    state.workspace.items.unshift({id:Nexus.Schema.id(), kind, name, at:Nexus.Schema.now()});
+    if(state.workspace.items.length>Nexus.Schema.MAX_WORKSPACE_ITEMS) state.workspace.items.length=Nexus.Schema.MAX_WORKSPACE_ITEMS;
+    dirty=true;
+  }
+  return {getState,isDirty,setDirty,update,logOp,addWorkspaceItem,payload,replace,merge};
+})();
+</script>
+<script>
+/* NEXUS persistence module: autosave to this browser's localStorage with rolling backups.
+   Entirely separate from export/import — this is local recovery, not the portable nexus.data file. */
+window.Nexus = window.Nexus || {};
+Nexus.Persistence = (() => {
+  "use strict";
+  const KEY="nexus_autosave_v1", BACKUP_PREFIX="nexus_backup_v1_", MAX_BACKUPS=3;
+  let timer=null;
+  function available(){ try{ const k="__nexus_test__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } }
+  function save(payload){
+    if(!available()) return {ok:false, reason:"Local storage is not available in this browser/session."};
+    try{
+      const serialized=JSON.stringify(payload);
+      const prev=localStorage.getItem(KEY);
+      if(prev){
+        for(let i=MAX_BACKUPS-1;i>0;i--){ const older=localStorage.getItem(BACKUP_PREFIX+(i-1)); if(older) localStorage.setItem(BACKUP_PREFIX+i, older); }
+        localStorage.setItem(BACKUP_PREFIX+"0", prev);
+      }
+      localStorage.setItem(KEY, serialized);
+      localStorage.setItem(KEY+"_at", Nexus.Schema.now());
+      return {ok:true};
+    }catch(e){ return {ok:false, reason:"Save failed: "+e.message}; }
+  }
+  function scheduleSave(payloadFn, delay=600){
+    if(timer) clearTimeout(timer);
+    timer=setTimeout(()=>{ save(payloadFn()); }, delay);
+  }
+  function load(){
+    if(!available()) return null;
+    const raw=localStorage.getItem(KEY); if(!raw) return null;
+    try{ return {data:JSON.parse(raw), at:localStorage.getItem(KEY+"_at")}; }catch(e){ return null; }
+  }
+  function loadBackup(index){
+    if(!available()) return null;
+    const raw=localStorage.getItem(BACKUP_PREFIX+index); if(!raw) return null;
+    try{ return JSON.parse(raw); }catch(e){ return null; }
+  }
+  function listBackups(){
+    if(!available()) return [];
+    const out=[]; for(let i=0;i<MAX_BACKUPS;i++){ if(localStorage.getItem(BACKUP_PREFIX+i)) out.push(i); } return out;
+  }
+  function clearAll(){
+    if(!available()) return;
+    localStorage.removeItem(KEY); localStorage.removeItem(KEY+"_at");
+    for(let i=0;i<MAX_BACKUPS;i++) localStorage.removeItem(BACKUP_PREFIX+i);
+  }
+  return {available,save,scheduleSave,load,loadBackup,listBackups,clearAll};
+})();
+</script>
+<script>
+/* NEXUS executor module: simulates running an approved operation inside a sandbox.
+   No real process, filesystem or network call is ever made — output is deterministic and fabricated for demonstration. */
+window.Nexus = window.Nexus || {};
+Nexus.Executor = (() => {
+  "use strict";
+  const MAX_OUTPUT=4000;
+  function simulateOutput(opName, params){
+    switch(opName){
+      case "create_workspace": return "Created directory: workspaces/"+(params.name||"default-workspace")+"\nPermissions: rwx (owner only)\nDone.";
+      case "write_file": return "Wrote file in workspace.\n(SIMULATED — no real filesystem access exists in this prototype)";
+      case "install_package": return "Resolving "+(params.package||"package")+"...\nSIMULATED install — no package manager is connected.\nNothing was downloaded or installed.";
+      case "run_script": return "Executing "+(params.script||"script")+" in sandbox...\nSIMULATED — no real interpreter is wired up yet.\nExit code: 0 (simulated)";
+      case "network_fetch": return "GET "+(params.url||"(no url)")+"\nSIMULATED — network is disabled in this prototype. No request was sent.";
+      default: return "SIMULATED execution. No real action was taken.";
+    }
+  }
+  function run(opName, params){
+    return new Promise(resolve=>{
+      const start=Date.now();
+      const duration = opName==="run_script" ? 1200 : opName==="network_fetch" ? 900 : 500;
+      setTimeout(()=>{
+        const outRaw=simulateOutput(opName, params||{});
+        resolve({ok:true, stdout:outRaw.slice(0,MAX_OUTPUT), truncated:outRaw.length>MAX_OUTPUT, ms:Date.now()-start});
+      }, duration);
+    });
+  }
+  return {run, MAX_OUTPUT};
+})();
+</script>
+<script>
+/* NEXUS provider module: deterministic offline demo. Now returns either plain text
+   or a structured operation proposal — it can never return something it would execute itself. */
+window.Nexus = window.Nexus || {};
+Nexus.Provider = class DemoProvider {
+  async generateReply(message, agentId) {
+    agentId = agentId || Nexus.Agents.DEFAULT;
+    const t = message.toLowerCase();
+    const propose = (opName, params, text) => {
+      if (!Nexus.Agents.allows(agentId, opName)) {
+        const who = Nexus.Agents.bestFor(opName);
+        return "The "+Nexus.Agents.get(agentId).label+" can't propose that kind of operation."+(who?" Try switching to the "+who+" for this.":"");
+      }
+      return {type:"operation", opName, params, text};
+    };
+    if (t.includes("workspace") || t.includes("new project")) return propose("create_workspace", {name:"default-workspace"}, "I'd propose creating a workspace folder. I can't do this on my own — review it below.");
+    if (t.includes("install") || (t.includes("python") && t.includes("set"))) return propose("install_package", {package:"python-demo-package"}, "That needs a package install. Here's the proposed operation — nothing happens until you approve it.");
+    if (t.includes("run") && (t.includes("script") || t.includes("command"))) return propose("run_script", {script:"setup.sh"}, "Running a script is a high-risk operation. I've drafted the proposal; it stays unexecuted until approved.");
+    if (t.includes("fetch") || t.includes("download") && t.includes("http")) return propose("network_fetch", {url:"https://example.invalid/resource"}, "That would require a network request. Proposing it below — network stays disabled otherwise.");
+    if (/\b(hi|hello|hey)\b/.test(t)) return "Hello. I'm the "+Nexus.Agents.get(agentId).label+", running in offline demonstration mode.";
+    if (t.includes("python")) return "The Python environment is not connected yet. It is planned for a later milestone. I can propose an install operation if you ask me to set one up.";
+    if (t.includes("terminal") || t.includes("command")) return "The terminal interface is present, but command execution is not implemented. No command was run.";
+    if (t.includes("security") || t.includes("permission") || t.includes("audit")) return "Every operation I propose goes through the policy engine, requires your approval, and is written to the audit log in the Security tab — nothing executes silently.";
+    if (t.includes("offline")) return "This prototype makes no network requests. Its responses are simulated locally.";
+    if (t.includes("agent")) return "Available agents: "+Nexus.Agents.list().map(a=>a.label).join(", ")+". Switch the active one from the selector above the message box.";
+    if (t.includes("who are you")) return "I am the "+Nexus.Agents.get(agentId).label+" — "+Nexus.Agents.get(agentId).desc+" My current intelligence provider is simulated.";
+    return "I received your request: \u201c" + message + "\u201d\\n\\nThis is a simulated response. The real intelligence engine has not been integrated yet.";
+  }
+};
+</script>
+<script>
+/* NEXUS live provider: calls the real Anthropic API. This only succeeds inside Claude's own
+   chat preview, which wires this one fetch through automatically — a published page's sandboxing
+   blocks all outbound network calls, and the native app will need its own HTTP client instead. */
+window.Nexus = window.Nexus || {};
+Nexus.ClaudeProvider = class ClaudeProvider {
+  async generateReply(message, agentId) {
+    agentId = agentId || Nexus.Agents.DEFAULT;
+    const agent = Nexus.Agents.get(agentId);
+    const allowedOps = Object.keys(Nexus.Policy.REGISTRY).filter(name=>agent.categories.includes(Nexus.Policy.describe(name).category));
+    const sys = "You are the "+agent.label+" inside NEXUS, a local-first terminal/agent prototype. "+agent.desc+" You may propose ONLY these operations, by exact name: "+(allowedOps.length?allowedOps.join(", "):"none — you cannot propose any operations, only explain and discuss")+". To propose one, reply with ONLY a JSON object, no other text: {\"type\":\"operation\",\"opName\":\"<name>\",\"params\":{...},\"text\":\"<one sentence for the user>\"}. For everything else reply with plain conversational text — no JSON, no markdown fences. Keep replies brief.";
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1000, system: sys, messages:[{role:"user", content: message}] })
+      });
+      const data = await resp.json();
+      const text = (data.content||[]).map(b=>b.type==="text"?b.text:"").join("").trim();
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && parsed.type==="operation" && Nexus.Policy.describe(parsed.opName)) {
+          return {type:"operation", opName:parsed.opName, params:parsed.params||{}, text:parsed.text||"Proposing an operation."};
+        }
+      } catch(e) { /* not JSON — plain text reply */ }
+      return text || "(Live Claude returned an empty response.)";
+    } catch(err) {
+      return "Live Claude call failed: "+err.message+"\n\nThis works while testing inside Claude's own chat preview. It's blocked once NEXUS is published as a standalone link or built as the native app — switch back to the Demo Provider in Settings, or see the note there about online mode.";
+    }
+  }
+};
+</script>
+<script>
+/* NEXUS modal module: replaces native confirm/alert/prompt, which the sandboxed artifact
+   environment blocks silently. All dialogs route through this. */
+window.Nexus = window.Nexus || {};
+Nexus.Modal = (() => {
+  "use strict";
+  const $ = id=>document.getElementById(id);
+  let resolver=null;
+  function open({title="",message="",withInput=false,inputValue="",confirmText="OK",cancelText="Cancel",danger=false}={}){
+    return new Promise(resolve=>{
+      resolver=resolve;
+      $("modalTitle").textContent=title;
+      $("modalMessage").textContent=message;
+      const inp=$("modalInput");
+      inp.style.display=withInput?"block":"none";
+      inp.value=inputValue;
+      $("modalConfirm").textContent=confirmText;
+      $("modalConfirm").className="btn primary"+(danger?" danger":"");
+      $("modalCancel").textContent=cancelText;
+      $("modalCancel").style.display=cancelText?"inline-block":"none";
+      $("modalOverlay").classList.add("show");
+      if(withInput) setTimeout(()=>inp.focus(),30);
+    });
+  }
+  function close(result){
+    $("modalOverlay").classList.remove("show");
+    if(resolver){ const r=resolver; resolver=null; r(result); }
+  }
+  function wire(){
+    $("modalConfirm").addEventListener("click",()=>{
+      const inp=$("modalInput");
+      close(inp.style.display!=="none" ? inp.value : true);
+    });
+    $("modalCancel").addEventListener("click",()=>close(null));
+    $("modalInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("modalConfirm").click();});
+  }
+  function confirmBox(message,opts={}){ return open({title:opts.title||"Confirm",message,confirmText:opts.confirmText||"Confirm",cancelText:"Cancel",danger:opts.danger}).then(r=>r===true); }
+  function alertBox(message,opts={}){ return open({title:opts.title||"Notice",message,confirmText:"OK",cancelText:""}); }
+  function promptBox(message,defVal="",opts={}){ return open({title:opts.title||"Input",message,withInput:true,inputValue:defVal,confirmText:opts.confirmText||"OK",cancelText:"Cancel"}); }
+  return {wire, confirmBox, alertBox, promptBox};
+})();
+</script>
+<script>
+/* NEXUS UI module: DOM rendering and view switching. */
+window.Nexus = window.Nexus || {};
+Nexus.UI = (() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  function showView(name) {
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));
+    document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+  }
+  function opCard(msg, onDecide) {
+    const spec = Nexus.Policy.describe(msg.opName) || {label:msg.opName, risk:"high"};
+    const wrap=document.createElement("div"); wrap.className="op-card";
+    const head=document.createElement("div"); head.className="op-head";
+    const name=document.createElement("div"); name.className="op-name"; name.textContent="PROPOSED: "+spec.label;
+    const risk=document.createElement("span"); risk.className="risk "+msg.risk; risk.textContent=msg.risk.toUpperCase()+" RISK";
+    head.append(name,risk);
+    const params=document.createElement("div"); params.className="op-params"; params.textContent=JSON.stringify(msg.params,null,2);
+    const reason=document.createElement("div"); reason.className="subtle"; reason.textContent=msg.policyReason;
+    wrap.append(head,params,reason);
+    if (msg.status==="pending") {
+      const row=document.createElement("div"); row.className="actions"; row.style.marginTop="9px";
+      const approve=document.createElement("button"); approve.className="btn primary"; approve.textContent="Approve"; approve.disabled=!msg.allowed;
+      const deny=document.createElement("button"); deny.className="btn danger"; deny.textContent="Deny";
+      approve.addEventListener("click",()=>onDecide(msg.id,"approved"));
+      deny.addEventListener("click",()=>onDecide(msg.id,"denied"));
+      row.append(approve,deny); wrap.appendChild(row);
+      if (!msg.allowed) { const w=document.createElement("div"); w.className="op-status denied"; w.textContent="Blocked by policy: "+msg.policyReason; wrap.appendChild(w); }
+    } else {
+      const st=document.createElement("div"); st.className="op-status "+msg.status;
+      st.textContent = msg.status==="approved" ? "Approved · simulated execution complete. Nothing real ran." : "Denied. Logged to audit.";
+      wrap.appendChild(st);
+    }
+    return wrap;
+  }
+  function render(state, currentId, onOpen, onDelete, onDecide) {
+    const current = state.conversations.find(c=>c.id===currentId);
+    if (!current) return;
+    $("currentTitle").textContent=current.title;
+    const ag=Nexus.Agents.get(current.agentId||Nexus.Agents.DEFAULT);
+    $("chatSubtitle").textContent=ag.label+" · "+ag.desc;
+    const sel=$("agentSelect"); if(sel) sel.value=current.agentId||Nexus.Agents.DEFAULT;
+    const box=$("messages"); box.replaceChildren();
+    for (const msg of current.messages) {
+      if (msg.type==="operation") { box.appendChild(opCard(msg,onDecide)); continue; }
+      const wrap=document.createElement("div"); wrap.className="message "+msg.role;
+      const sender=document.createElement("div"); sender.className="sender"; sender.textContent=msg.role==="user"?"YOU":"NEXUS";
+      const content=document.createElement("div"); content.textContent=msg.content;
+      wrap.append(sender,content); box.appendChild(wrap);
+    }
+    box.scrollTop=box.scrollHeight;
+    renderList(state,currentId,onOpen,onDelete);
+    $("conversationCount").textContent=state.conversations.length;
+    $("messageCount").textContent=state.conversations.reduce((n,c)=>n+c.messages.length,0);
+    $("schemaVersion").textContent=Nexus.Schema.VERSION;
+  }
+  function renderList(state,currentId,onOpen,onDelete) {
+    const host=$("sideChats"); host.replaceChildren();
+    const term=$("chatSearch").value.trim().toLowerCase();
+    for (const c of [...state.conversations].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))) {
+      const textBlob=c.title+" "+c.messages.map(m=>m.content||"").join(" ");
+      if (term && !textBlob.toLowerCase().includes(term)) continue;
+      const row=document.createElement("div"); row.className="chat-item"+(c.id===currentId?" current":"");
+      const open=document.createElement("button"); open.className="open-chat"; open.textContent=c.title; open.title=c.title; open.addEventListener("click",()=>onOpen(c.id));
+      const del=document.createElement("button"); del.className="delete-one"; del.textContent="×"; del.title="Delete conversation"; del.setAttribute("aria-label","Delete "+c.title); del.addEventListener("click",()=>onDelete(c.id));
+      row.append(open,del); host.appendChild(row);
+    }
+  }
+  function renderSecurity(state, onToggle, onClearLog) {
+    const toggles=$("permToggles"); toggles.replaceChildren();
+    const labels={filesystem:"Filesystem operations",packages:"Package installs",network:"Network requests",workspace:"Workspace management"};
+    for (const key of Object.keys(state.permissions)) {
+      const row=document.createElement("div"); row.className="toggle-row";
+      const lab=document.createElement("div"); lab.textContent=labels[key]||key;
+      const btn=document.createElement("button"); btn.className="toggle"+(state.permissions[key]?" on":""); btn.setAttribute("aria-label","Toggle "+key);
+      btn.addEventListener("click",()=>onToggle(key));
+      row.append(lab,btn); toggles.appendChild(row);
+    }
+    $("logCount").textContent=state.auditLog.length;
+    const list=$("logList"); list.replaceChildren();
+    if (state.auditLog.length===0) { const e=document.createElement("div"); e.className="subtle"; e.textContent="No operations have been proposed yet."; list.appendChild(e); }
+    for (const entry of state.auditLog) {
+      const row=document.createElement("div"); row.className="log-row";
+      const n=document.createElement("div"); n.className="lname"; n.textContent=(Nexus.Policy.describe(entry.opName)?.label || entry.opName)+" — "+entry.detail;
+      const s=document.createElement("span"); s.className="risk "+(entry.status==="approved"?"low":entry.status==="denied"?"high":"medium"); s.textContent=entry.status.toUpperCase();
+      const d=document.createElement("span"); d.className="subtle"; d.textContent=new Date(entry.at).toLocaleString();
+      row.append(n,s,d); list.appendChild(row);
+    }
+  }
+  function renderTerminal(state, onDecide) {
+    const out=$("termOut"); if(!out)return;
+    out.replaceChildren();
+    for (const e of state.terminal.entries) {
+      if (e.type==="operation") { out.appendChild(opCard(e,onDecide)); continue; }
+      const line=document.createElement("div"); line.className="term-line "+e.kind; line.textContent=e.text; out.appendChild(line);
+    }
+    out.scrollTop=out.scrollHeight;
+  }
+  function renderFiles(state) {
+    const list=$("filesList"); if(!list)return;
+    list.replaceChildren();
+    if(!state.workspace.items.length){ const e=document.createElement("div"); e.className="subtle"; e.textContent="No workspace items yet."; list.appendChild(e); return; }
+    const label={folder:"[DIR]",file:"[FILE]",package:"[PKG]"};
+    for (const item of state.workspace.items) {
+      const row=document.createElement("div"); row.className="log-row";
+      const n=document.createElement("div"); n.className="lname"; n.textContent=(label[item.kind]||"[ITEM]")+" "+item.name;
+      const k=document.createElement("span"); k.className="risk low"; k.textContent=item.kind.toUpperCase();
+      const d=document.createElement("span"); d.className="subtle"; d.textContent=new Date(item.at).toLocaleString();
+      row.append(n,k,d); list.appendChild(row);
+    }
+  }
+  function status(message, strong="Data status") {
+    const box=$("dataStatus"); box.replaceChildren();
+    const b=document.createElement("strong"); b.textContent=strong;
+    const p=document.createElement("div"); p.textContent=message;
+    box.append(b,document.createElement("br"),p);
+  }
+  function renderEnvironments(state) {
+    const list=$("envList"); if(!list)return;
+    list.replaceChildren();
+    const pkgs=state.workspace.items.filter(i=>i.kind==="package");
+    if(!pkgs.length){ const e=document.createElement("div"); e.className="subtle"; e.textContent="No packages installed yet. Approve an install_package operation in Chat or Terminal."; list.appendChild(e); return; }
+    for (const item of pkgs) {
+      const row=document.createElement("div"); row.className="log-row";
+      const n=document.createElement("div"); n.className="lname"; n.textContent=item.name;
+      const k=document.createElement("span"); k.className="risk low"; k.textContent="INSTALLED";
+      const d=document.createElement("span"); d.className="subtle"; d.textContent=new Date(item.at).toLocaleString();
+      row.append(n,k,d); list.appendChild(row);
+    }
+  }
+  function renderAgents() {
+    const list=$("agentList"); if(!list)return;
+    list.replaceChildren();
+    for (const a of Nexus.Agents.list()) {
+      const row=document.createElement("div"); row.className="log-row";
+      const n=document.createElement("div"); n.className="lname"; n.textContent=a.label+" — "+a.desc;
+      const k=document.createElement("span"); k.className="risk "+(a.categories.length?"low":"medium"); k.textContent=a.categories.length?a.categories.join(", ").toUpperCase():"INFO ONLY";
+      row.append(n,k); list.appendChild(row);
+    }
+  }
+  function populateAgentSelect() {
+    const sel=$("agentSelect"); if(!sel||sel.options.length)return;
+    for (const a of Nexus.Agents.list()) { const opt=document.createElement("option"); opt.value=a.id; opt.textContent=a.label; sel.appendChild(opt); }
+  }
+  return {showView,render,renderSecurity,renderTerminal,renderFiles,renderEnvironments,renderAgents,populateAgentSelect,status,$};
+})();
+</script>
+<script>
+/* NEXUS application controller. */
+(() => {
+  "use strict";
+  const $=Nexus.UI.$;
+  const store=Nexus.Store;
+  const demoProvider=new Nexus.Provider();
+  const liveProvider=new Nexus.ClaudeProvider();
+  function currentProvider(){ return (state().preferences.provider==="live") ? liveProvider : demoProvider; }
+  let currentId=store.getState().activeConversationId;
+  let sending=false;
+
+  function state(){return store.getState();}
+  function markDirty(message="Changes are in memory. Export nexus.data to keep them.") {
+    store.setDirty(true); Nexus.UI.status(message,"Not exported");
+    Nexus.Persistence.scheduleSave(()=>store.payload());
+    setTimeout(updateAutosaveBox,700);
+  }
+  function updateAutosaveBox(message){
+    const box=$("autosaveStatus"); if(!box)return;
+    if(message){box.textContent=message;return;}
+    if(!Nexus.Persistence.available()){box.textContent="Local storage is not available in this browser/session — autosave is off.";return;}
+    const loaded=Nexus.Persistence.load();
+    box.textContent=loaded&&loaded.at?("Last autosaved: "+new Date(loaded.at).toLocaleString()+" · "+Nexus.Persistence.listBackups().length+" backup(s) kept."):"No autosave yet. It saves automatically after your first change.";
+  }
+  async function restoreBackup(){
+    const backups=Nexus.Persistence.listBackups();
+    if(backups.length===0){Nexus.Modal.alertBox("No local backups are available yet. Backups build up after a couple of changes — the very first autosave has nothing older to keep.");return;}
+    const ok=await Nexus.Modal.confirmBox("Restore the most recent local backup? This replaces your current in-memory session.",{danger:true,confirmText:"Restore"});
+    if(!ok)return;
+    const data=Nexus.Persistence.loadBackup(backups[0]);
+    if(!data){Nexus.Modal.alertBox("Backup could not be read.");return;}
+    try{
+      const candidate=Nexus.Schema.validate(data);
+      store.replace(candidate); currentId=store.getState().activeConversationId;
+      Nexus.UI.status("Restored from local backup.","Restored"); render(); updateAutosaveBox();
+    }catch(e){Nexus.Modal.alertBox("Backup is invalid: "+e.message);}
+  }
+  async function clearAutosave(){
+    const ok=await Nexus.Modal.confirmBox("Clear local autosave and backups? Your current in-memory session is unaffected.",{danger:true,confirmText:"Clear"});
+    if(!ok)return;
+    Nexus.Persistence.clearAll(); updateAutosaveBox("Local autosave cleared.");
+  }
+  function parseCommand(text){
+    const t=text.trim().toLowerCase(); if(!t) return null;
+    if(/^mkdir\b/.test(t) || t.includes("workspace")) return {opName:"create_workspace", params:{name:t.replace(/^mkdir\s+/,"").trim()||"default-workspace"}};
+    if(/^(pip|apt|npm)\s+install\b/.test(t) || t.startsWith("install ")) return {opName:"install_package", params:{package:t.replace(/^(pip|apt|npm)?\s*install\s+/,"").trim()||"package"}};
+    if(/^(python|bash|sh|run)\b/.test(t) || /\.(py|sh)$/.test(t)) return {opName:"run_script", params:{script:t}};
+    if(/^(curl|wget)\b/.test(t) || t.includes("http")) return {opName:"network_fetch", params:{url:t}};
+    return {opName:null, raw:t};
+  }
+  function submitCommand(){
+    const input=$("termInput"); const text=input.value; if(!text.trim())return;
+    const parsed=parseCommand(text); input.value="";
+    store.update(s=>{
+      s.terminal.entries.push({id:Nexus.Schema.id(), kind:"cmd", text:text.trim()});
+      if(s.terminal.entries.length>Nexus.Schema.MAX_TERMINAL) s.terminal.entries.splice(0, s.terminal.entries.length-Nexus.Schema.MAX_TERMINAL);
+    });
+    if(!parsed || !parsed.opName){
+      store.update(s=>{s.terminal.entries.push({id:Nexus.Schema.id(), kind:"blocked", text:"Unrecognized command. Not in the operation registry — nothing to propose or run."});});
+      store.logOp("unknown","denied","Unrecognized terminal command, blocked before reaching the policy engine.");
+      markDirty(); render(); return;
+    }
+    const evalResult=Nexus.Policy.evaluate(parsed.opName, state().permissions);
+    store.update(s=>{
+      s.terminal.entries.push({id:Nexus.Schema.id(), type:"operation", opName:parsed.opName, params:parsed.params, risk:evalResult.risk, allowed:evalResult.allowed, policyReason:evalResult.reason, status:"pending"});
+    });
+    markDirty(); render();
+  }
+  async function decideTerminalOp(entryId, decision){
+    const entries=state().terminal.entries; const entry=entries.find(e=>e.id===entryId); if(!entry||entry.status!=="pending")return;
+    store.update(s=>{ const e=s.terminal.entries.find(x=>x.id===entryId); if(e) e.status=decision; });
+    if(decision==="denied"){
+      store.logOp(entry.opName,"denied","Denied from Terminal.");
+      store.update(s=>{s.terminal.entries.push({id:Nexus.Schema.id(),kind:"blocked",text:"Denied. Nothing executed."});});
+      markDirty(); render(); return;
+    }
+    store.update(s=>{s.terminal.entries.push({id:Nexus.Schema.id(),kind:"meta",text:"Executing in sandbox…"});});
+    render();
+    const result=await Nexus.Executor.run(entry.opName, entry.params);
+    store.update(s=>{
+      s.terminal.entries.push({id:Nexus.Schema.id(), kind:"out", text:result.stdout+(result.truncated?"\n[output truncated at "+Nexus.Executor.MAX_OUTPUT+" chars]":"")+"\n("+result.ms+"ms, simulated)"});
+    });
+    recordWorkspaceEffect(entry.opName, entry.params);
+    store.logOp(entry.opName,"approved","Approved and executed in Terminal (simulated), "+result.ms+"ms.");
+    markDirty(); render();
+  }
+  function render(){
+    Nexus.UI.render(state(),currentId,openConversation,deleteById,decideOperation);
+    Nexus.UI.renderSecurity(state(),togglePermission,clearLog);
+    Nexus.UI.renderTerminal(state(),decideTerminalOp);
+    Nexus.UI.renderFiles(state());
+    Nexus.UI.renderEnvironments(state());
+    Nexus.UI.renderAgents();
+    updateModeBadge();
+  }
+  function updateModeBadge(){
+    const live=state().preferences.provider==="live";
+    const badge=$("modeBadge");
+    badge.textContent=live?"● ONLINE · LIVE (preview only)":"● OFFLINE · DEMO";
+    badge.style.color=live?"var(--blue)":"var(--green)";
+    badge.style.borderColor=live?"#1d4a78":"#285a47";
+    const tgl=$("providerToggle"); if(tgl) tgl.className="toggle"+(live?" on":"");
+  }
+  function openConversation(id){currentId=id; store.update(s=>{s.activeConversationId=id;}); markDirty("Active conversation changed. Export nexus.data to keep this selection."); Nexus.UI.showView("chat");render();}
+  function addConversation(){
+    if(state().conversations.length>=500){Nexus.Modal.alertBox("NEXUS reached the 500-conversation prototype limit. Export your data before continuing.");return;}
+    const c=Nexus.Schema.newConversation();
+    store.update(s=>{s.conversations.push(c);s.activeConversationId=c.id;});
+    currentId=c.id; markDirty(); Nexus.UI.showView("chat");render();$("prompt").focus();
+  }
+  async function deleteById(id){
+    const s=state(); if(s.conversations.length===1){Nexus.Modal.alertBox("Keep at least one conversation. Create another before deleting this one.");return;}
+    const ok=await Nexus.Modal.confirmBox("Delete this conversation? This change cannot be undone unless you have an exported backup.",{danger:true,confirmText:"Delete"});
+    if(!ok)return;
+    store.update(x=>{x.conversations=x.conversations.filter(c=>c.id!==id);if(x.activeConversationId===id)x.activeConversationId=x.conversations[0].id;});
+    currentId=state().activeConversationId;markDirty("Conversation deleted in this session. Export to keep the change.");render();
+  }
+  function deleteCurrent(){deleteById(currentId);}
+  async function renameCurrent(){
+    const c=state().conversations.find(x=>x.id===currentId);if(!c)return;
+    const value=await Nexus.Modal.promptBox("Rename conversation:",c.title,{title:"Rename"});if(value===null)return;
+    const title=value.trim();if(!title||title.length>200){Nexus.Modal.alertBox("Title must contain 1–200 characters.");return;}
+    store.update(s=>{s.conversations.find(x=>x.id===currentId).title=title;});markDirty();render();
+  }
+  function togglePermission(key){
+    store.update(s=>{s.permissions[key]=!s.permissions[key];});
+    markDirty("Permission changed. Export nexus.data to keep this setting.");render();
+  }
+  async function clearLog(){
+    if(state().auditLog.length===0)return;
+    const ok=await Nexus.Modal.confirmBox("Clear the audit log? This cannot be undone unless you have an exported backup.",{danger:true,confirmText:"Clear"});
+    if(!ok)return;
+    store.update(s=>{s.auditLog=[];}); markDirty("Audit log cleared in this session. Export to keep the change.");render();
+  }
+  function recordWorkspaceEffect(opName, params){
+    if(opName==="create_workspace") store.addWorkspaceItem("folder", (params&&params.name)||"default-workspace");
+    else if(opName==="write_file") store.addWorkspaceItem("file", (params&&params.name)||"new-file.txt");
+    else if(opName==="install_package") store.addWorkspaceItem("package", (params&&params.package)||"package");
+  }
+  async function decideOperation(opMsgId, decision){
+    const c=state().conversations.find(x=>x.id===currentId); if(!c)return;
+    const msg=c.messages.find(m=>m.id===opMsgId); if(!msg||msg.status!=="pending")return;
+    store.update(s=>{
+      const conv=s.conversations.find(x=>x.id===currentId);
+      const m=conv.messages.find(x=>x.id===opMsgId);
+      m.status=decision;
+      conv.updatedAt=Nexus.Schema.now();
+    });
+    if(decision==="denied"){
+      store.logOp(msg.opName,"denied","Denied by user in chat.");
+      markDirty("Operation denied. Export to keep the audit trail."); render(); return;
+    }
+    render();
+    const result=await Nexus.Executor.run(msg.opName, msg.params);
+    store.update(s=>{
+      const conv=s.conversations.find(x=>x.id===currentId); if(!conv)return;
+      conv.messages.push({id:Nexus.Schema.id(),role:"assistant",content:"Sandbox output:\n"+result.stdout+(result.truncated?"\n[truncated]":"")+"\n("+result.ms+"ms, simulated)",createdAt:Nexus.Schema.now()});
+      conv.updatedAt=Nexus.Schema.now();
+    });
+    recordWorkspaceEffect(msg.opName, msg.params);
+    store.logOp(msg.opName,"approved","Approved and executed in Chat (simulated), "+result.ms+"ms.");
+    markDirty("Operation approved and executed (simulated). Export to keep the audit trail.");
+    render();
+  }
+  async function send(){
+    if(sending)return;
+    const input=$("prompt"),message=input.value.trim();if(!message)return;
+    const targetId=currentId;
+    const c=state().conversations.find(x=>x.id===targetId);if(!c)return;
+    if(message.length>200000){Nexus.Modal.alertBox("This prototype limits each message to 200,000 characters.");return;}
+    if(c.messages.length>=9999){Nexus.Modal.alertBox("This conversation reached its message limit. Start a new conversation.");return;}
+    sending=true;$("send").disabled=true;
+    store.update(s=>{
+      const target=s.conversations.find(x=>x.id===targetId);
+      target.messages.push({id:Nexus.Schema.id(),role:"user",content:message,createdAt:Nexus.Schema.now()});
+      if(target.title==="New conversation")target.title=message.slice(0,34)+(message.length>34?"…":"");
+      target.updatedAt=Nexus.Schema.now();
+    });
+    input.value="";markDirty();render();
+    try{
+      const activeConv=state().conversations.find(x=>x.id===currentId);
+      const answer=await currentProvider().generateReply(message, activeConv?activeConv.agentId:undefined);
+      store.update(s=>{
+        const target=s.conversations.find(x=>x.id===currentId);if(!target)return;
+        if (answer && typeof answer==="object" && answer.type==="operation") {
+          const evalResult=Nexus.Policy.evaluate(answer.opName, s.permissions);
+          target.messages.push({id:Nexus.Schema.id(),role:"assistant",content:answer.text,createdAt:Nexus.Schema.now()});
+          target.messages.push({id:Nexus.Schema.id(),type:"operation",opName:answer.opName,params:answer.params,risk:evalResult.risk,allowed:evalResult.allowed,policyReason:evalResult.reason,status:"pending",createdAt:Nexus.Schema.now()});
+        } else {
+          target.messages.push({id:Nexus.Schema.id(),role:"assistant",content:answer,createdAt:Nexus.Schema.now()});
+        }
+        target.updatedAt=Nexus.Schema.now();
+      });
+      markDirty();render();
+    }catch(error){Nexus.UI.status("Demo provider error: "+error.message,"Provider error");}
+    finally{sending=false;$("send").disabled=false;input.focus();}
+  }
+  function exportData(){
+    const blob=new Blob([JSON.stringify(store.payload(),null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download="nexus.data";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    store.setDirty(false);Nexus.UI.status("Export was requested. Check your browser's download location for nexus.data. Keep a separate backup before replacing an older file.","Export requested");
+  }
+  async function importData(file){
+    if(file.size>10*1024*1024)throw new Error("File exceeds the 10 MB import limit.");
+    const parsed=JSON.parse(await file.text());
+    const candidate=Nexus.Schema.validate(parsed);
+    const migrated=parsed.schemaVersion<Nexus.Schema.VERSION;
+    const summary=`Validated ${candidate.conversations.length} conversations. ${migrated?"Older schema will be upgraded. ":""}Choose how to load them.`;
+    const choice=await Nexus.Modal.promptBox(summary+"\nType REPLACE to replace current session data, or MERGE to add conversations. Cancel to do nothing.","REPLACE",{title:"Import nexus.data"});
+    if(choice===null)return;
+    if(choice.trim().toUpperCase()==="REPLACE"){
+      store.replace(candidate);currentId=store.getState().activeConversationId;
+      Nexus.UI.status("Import successful. The current session now contains the imported data. Export after making changes.","Import complete");
+    }else if(choice.trim().toUpperCase()==="MERGE"){
+      store.merge(candidate);currentId=store.getState().activeConversationId;
+      markDirty("Import merged into this session. Export nexus.data to keep the combined data.");
+    }else{Nexus.Modal.alertBox("No changes made. Enter REPLACE or MERGE next time.");return;}
+    Nexus.UI.showView("chat");render();
+  }
+  document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>Nexus.UI.showView(b.dataset.view)));
+  $("newChat").addEventListener("click",addConversation);$("newChatSide").addEventListener("click",addConversation);
+  $("deleteChat").addEventListener("click",deleteCurrent);$("renameChat").addEventListener("click",renameCurrent);
+  $("send").addEventListener("click",send);$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter")send();});
+  $("chatSearch").addEventListener("input",render);
+  $("exportData").addEventListener("click",exportData);
+  $("importData").addEventListener("click",()=>$("filePicker").click());
+  $("filePicker").addEventListener("change",async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{await importData(file);}catch(error){Nexus.Modal.alertBox("Import failed. Current session was not changed.\n\n"+error.message);}
+    finally{e.target.value="";}
+  });
+  $("clearLog").addEventListener("click",clearLog);
+  $("restoreBackup").addEventListener("click",restoreBackup);
+  $("clearAutosave").addEventListener("click",clearAutosave);
+  $("termSend").addEventListener("click",submitCommand);
+  $("termInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitCommand();});
+  $("aboutBtn").addEventListener("click",()=>$("aboutText").hidden=!$("aboutText").hidden);
+  Nexus.UI.populateAgentSelect();
+  $("agentSelect").addEventListener("change",()=>{
+    const c=state().conversations.find(x=>x.id===currentId); if(!c)return;
+    store.update(s=>{ s.conversations.find(x=>x.id===currentId).agentId=$("agentSelect").value; });
+    markDirty(); render();
+  });
+  function toggleProvider(){
+    store.update(s=>{ s.preferences.provider = (s.preferences.provider==="live") ? "demo" : "live"; });
+    markDirty(); render();
+  }
+  $("providerToggle").addEventListener("click",toggleProvider);
+  $("modeBadge").addEventListener("click",toggleProvider);
+  Nexus.Modal.wire();
+  window.addEventListener("beforeunload",e=>{if(store.isDirty()){e.preventDefault();e.returnValue="";}});
+  (function tryRestoreOnLoad(){
+    const loaded=Nexus.Persistence.load();
+    if(!loaded)return;
+    try{
+      const candidate=Nexus.Schema.validate(loaded.data);
+      store.replace(candidate); currentId=store.getState().activeConversationId;
+      Nexus.UI.status("Restored your last local session (autosaved "+new Date(loaded.at).toLocaleString()+").","Restored");
+    }catch(e){ /* ignore corrupt autosave, keep fresh state */ }
+  })();
+  render();
+  updateAutosaveBox();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "PROJECT NEXUS",
+  "description": "Offline-First AI-Powered Android Terminal and Agent Environment",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
