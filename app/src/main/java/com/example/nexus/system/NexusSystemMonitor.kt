@@ -39,6 +39,25 @@ class NexusSystemMonitor(private val context: Context) {
         val cpuCores = Runtime.getRuntime().availableProcessors()
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
 
+        var localIp = "127.0.0.1"
+        try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (iface.isLoopback || !iface.isUp) continue
+                val addrs = iface.inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val addr = addrs.nextElement()
+                    val host = addr.hostAddress ?: continue
+                    if (!host.contains(":") && !host.startsWith("127.")) {
+                        localIp = host
+                        break
+                    }
+                }
+                if (localIp != "127.0.0.1") break
+            }
+        } catch (_: Exception) {}
+
         return SystemInfo(
             ramFreeMb = ramAvailMb,
             ramTotalMb = ramTotalMb,
@@ -48,7 +67,9 @@ class NexusSystemMonitor(private val context: Context) {
             batteryLevel = batteryPct,
             isCharging = isCharging,
             cpuCores = cpuCores,
-            abi = abi
+            abi = abi,
+            localIp = localIp,
+            networkState = if (localIp != "127.0.0.1") "Online ($localIp)" else "Local Only"
         )
     }
 }

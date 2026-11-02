@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan to replace simulated command execution with real ProcessBuilder OS execution, provide verified process telemetry (PID, exit code, execution time, stdout/stderr), implement live network socket scanning with real latency, and connect real online Gemini AI via server-side BuildConfig without requiring user API key input.",
+  "updatedAt":  "2026-11-02T11:11:07.496651723Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

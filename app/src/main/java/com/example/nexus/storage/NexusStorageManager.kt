@@ -359,4 +359,66 @@ requests-mock>=1.0.0
     fun listBackups(): List<String> {
         return backupsDir.listFiles()?.map { it.name }?.sortedDescending() ?: emptyList()
     }
+
+    /**
+     * Exports a workspace directory to a standard ZIP file in backupsDir.
+     */
+    fun exportWorkspaceToZip(workspaceRelativePath: String): File? {
+        val targetDir = if (workspaceRelativePath.isBlank()) workspacesDir else File(workspacesDir, workspaceRelativePath)
+        if (!targetDir.exists() || !targetDir.isDirectory) return null
+        val safeName = targetDir.name.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        val zipFile = File(backupsDir, "${safeName}_export_${System.currentTimeMillis()}.zip")
+        return try {
+            java.util.zip.ZipOutputStream(java.io.FileOutputStream(zipFile)).use { zos ->
+                targetDir.walkTopDown().forEach { file ->
+                    val relPath = file.relativeTo(targetDir).path
+                    if (relPath.isNotEmpty()) {
+                        if (file.isDirectory) {
+                            zos.putNextEntry(java.util.zip.ZipEntry("$relPath/"))
+                            zos.closeEntry()
+                        } else {
+                            zos.putNextEntry(java.util.zip.ZipEntry(relPath))
+                            file.inputStream().use { it.copyTo(zos) }
+                            zos.closeEntry()
+                        }
+                    }
+                }
+            }
+            zipFile
+        } catch (e: Exception) {
+            zipFile.delete()
+            null
+        }
+    }
+
+    /**
+     * Imports files from a ZIP archive into a workspace safely guarding against Zip Slip.
+     */
+    fun importWorkspaceFromZip(zipFile: File, targetWorkspaceName: String): Boolean {
+        val destDir = File(workspacesDir, targetWorkspaceName)
+        destDir.mkdirs()
+        return try {
+            java.util.zip.ZipInputStream(zipFile.inputStream()).use { zis ->
+                var entry: java.util.zip.ZipEntry? = zis.nextEntry
+                while (entry != null) {
+                    val outFile = File(destDir, entry.name)
+                    // Security check: Zip Slip vulnerability prevention
+                    if (!outFile.canonicalPath.startsWith(destDir.canonicalPath)) {
+                        throw SecurityException("Zip Slip detected in archive: ${entry.name}")
+                    }
+                    if (entry.isDirectory) {
+                        outFile.mkdirs()
+                    } else {
+                        outFile.parentFile?.mkdirs()
+                        outFile.outputStream().use { zis.copyTo(it) }
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

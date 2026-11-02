@@ -78,6 +78,8 @@ fun SettingsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var importJsonInput by remember { mutableStateOf("") }
     var importStatusMessage by remember { mutableStateOf<String?>(null) }
+    var isTestingAi by remember { mutableStateOf(false) }
+    var testAiResult by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = modifier
@@ -141,6 +143,44 @@ fun SettingsScreen(
                             ),
                             modifier = Modifier.testTag("provider_toggle_switch")
                         )
+                    }
+
+                    if (uiState.activeProviderType == AIProviderType.GEMINI) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                isTestingAi = true
+                                viewModel.testOnlineAiConnection { _, msg ->
+                                    isTestingAi = false
+                                    testAiResult = msg
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = NexusPanel2),
+                            border = BorderStroke(1.dp, NexusBorder),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isTestingAi,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("test_online_ai_btn")
+                        ) {
+                            Text(
+                                text = if (isTestingAi) "Connecting to Gemini Cloud..." else "Test Live Online AI Connection (Ping)",
+                                color = NexusCyan,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (testAiResult != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = testAiResult ?: "",
+                                color = if (testAiResult?.contains("Connected") == true) NexusGreen else NexusAmber,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                lineHeight = 15.sp
+                            )
+                        }
                     }
                 }
             }

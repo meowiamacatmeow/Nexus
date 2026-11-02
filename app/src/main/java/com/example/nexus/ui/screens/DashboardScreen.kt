@@ -280,6 +280,56 @@ fun DashboardScreen(
                 Button(
                     onClick = {
                         viewModel.navigateTo(NexusNavDestination.CHAT)
+                        viewModel.sendChatMessage("Set up C++ and run a hello world command")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NexusPanel2),
+                    border = BorderStroke(1.dp, NexusBorder),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("quick_setup_cpp")
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Code, contentDescription = null, tint = NexusGreen, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Set up C++ & Run Hello World", color = NexusText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("LLVM clang++ compiler toolchain, main.cpp scaffolding, native execution", color = NexusMuted, fontSize = 11.sp)
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.navigateTo(NexusNavDestination.TERMINAL)
+                        viewModel.executeTerminalCommand("nmap scanme.nmap.org")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NexusPanel2),
+                    border = BorderStroke(1.dp, NexusBorder),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("quick_nmap_scan")
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Security, contentDescription = null, tint = NexusAmber, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Audit Network Host (nmap scanme.nmap.org)", color = NexusText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("Centralized policy check, zero-trust approval, port telemetry report", color = NexusMuted, fontSize = 11.sp)
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.navigateTo(NexusNavDestination.CHAT)
                         viewModel.sendChatMessage("Set up a Python development environment with verified scaffolding and requirements.txt")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NexusPanel2),
@@ -293,34 +343,11 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Code, contentDescription = null, tint = NexusGreen, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Code, contentDescription = null, tint = NexusCyan, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Set up Python Development Environment", color = NexusText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Text("Plan, sandbox inspect, create workspace, verify dependencies", color = NexusMuted, fontSize = 11.sp)
-                        }
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        viewModel.navigateTo(NexusNavDestination.CHAT)
-                        viewModel.sendChatMessage("Create a web scraper project workspace with README.md and scraper.py")
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = NexusPanel2),
-                    border = BorderStroke(1.dp, NexusBorder),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Build, contentDescription = null, tint = NexusCyan, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Scaffold Web Scraper Project", color = NexusText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text("Structured plan with safe mock fetch and verified output", color = NexusMuted, fontSize = 11.sp)
                         }
                     }
                 }

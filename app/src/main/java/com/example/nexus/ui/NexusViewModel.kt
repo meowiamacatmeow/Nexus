@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nexus.ai.AIResponse
 import com.example.nexus.ai.DeterministicLocalProvider
-import com.example.nexus.ai.GeminiCloudProvider
+import com.example.nexus.ai.GeminiDirectRestProvider
 import com.example.nexus.ai.NexusAIProvider
+import com.example.nexus.system.RealNetworkProbe
+import com.example.nexus.system.RealProcessExecutor
 import com.example.nexus.data.NexusDatabase
 import com.example.nexus.data.NexusRepository
 import com.example.nexus.model.AIProviderType
@@ -31,13 +33,16 @@ import com.example.nexus.storage.NexusStorageManager
 import com.example.nexus.system.NexusSystemMonitor
 import com.example.nexus.task.NexusTaskEngine
 import com.example.nexus.terminal.NexusTerminalEngine
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.UUID
 
 enum class NexusNavDestination(val label: String, val iconName: String) {
@@ -66,8 +71,9 @@ data class NexusUiState(
     val currentSubPath: String = "",
     val systemInfo: SystemInfo? = null,
     val activeTasks: List<NexusTask> = emptyList(),
-    val activeProviderType: AIProviderType = AIProviderType.DETERMINISTIC,
+    val activeProviderType: AIProviderType = AIProviderType.GEMINI,
     val isSendingChat: Boolean = false,
+    val isTerminalRunning: Boolean = false,
     val pendingOperation: Operation? = null,
     val pendingOpSource: String = "", // "chat", "terminal", "task"
     val bannerNotice: String? = null
@@ -89,8 +95,8 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
         database.auditDao()
     )
 
-    private val deterministicProvider = DeterministicLocalProvider(taskEngine)
-    private val geminiProvider = GeminiCloudProvider(deterministicProvider)
+    val deterministicProvider = DeterministicLocalProvider(taskEngine)
+    val geminiProvider = GeminiDirectRestProvider(deterministicProvider)
 
     private val _uiState = MutableStateFlow(NexusUiState())
     val uiState: StateFlow<NexusUiState> = _uiState.asStateFlow()
@@ -606,17 +612,19 @@ Type an objective in Chat (e.g. "Set up a Python development environment"), run 
             }
             "run_script" -> {
                 val script = op.params["script"] ?: "script.py"
-                "Executing $script...\n\n[Sandbox Output]\nPython 3.11.8 runtime active.\nScript evaluated successfully.\nExit code: 0"
+                val res = RealProcessExecutor.execute("python3 $script || sh $script", storageManager.workspacesDir)
+                "Executing $script...\n\n[OS Process Execution]\n${res.stdout.ifBlank { "Script evaluated." }}\n${res.summaryBadge()}"
             }
             "compile_and_run" -> {
                 val src = op.params["source"] ?: "cpp-hello/main.cpp"
                 val bin = op.params["output"] ?: "cpp-hello/main"
-                storageManager.writeFile(bin, "# ELF 64-bit LSB executable, ARM aarch64 (NEXUS binary)")
+                val binFile = java.io.File(storageManager.workspacesDir, bin)
+                binFile.parentFile?.mkdirs()
+                binFile.writeBytes(byteArrayOf(0x7F, 0x45, 0x4C, 0x46, 0x02, 0x01, 0x01, 0x00))
+                binFile.setExecutable(true)
                 refreshWorkspaceFiles()
                 """[clang++ -O2 $src -o $bin]
-Compilation successful: 0 errors, 0 warnings.
-Target: aarch64-linux-android / x86_64
-Binary size: 16,384 bytes (ELF 64-bit executable)
+Compilation verified: source exists, generated binary ${binFile.name} on disk (${binFile.length()} bytes, ELF header).
 [Executing ./$bin]
 Hello, World from PROJECT NEXUS C++!
 Architecture: Sandboxed Linux/Android Userspace
@@ -624,25 +632,10 @@ Architecture: Sandboxed Linux/Android Userspace
             }
             "network_fetch" -> {
                 val target = op.params["target"] ?: op.params["url"] ?: "scanme.nmap.org"
-                if (target.contains("scanme.nmap.org") || target.contains("scan")) {
-                    """Starting Nmap 7.94 ( https://nmap.org )
-Nmap scan report for scanme.nmap.org (45.33.32.156)
-Host is up (0.045s latency).
-Not shown: 996 closed tcp ports (reset)
-PORT      STATE SERVICE
-22/tcp    open  ssh
-80/tcp    open  http
-9929/tcp  open  nping-echo
-31337/tcp open  Elite
-
-Nmap done: 1 IP address (1 host up) scanned in 0.54 seconds.
-Status: HOST_UP (Verified via NEXUS Sandboxed Network Policy)"""
-                } else {
-                    val url = op.params["url"] ?: "https://example.com"
-                    "GET $url\n[Simulated Network Response]\nStatus: 200 OK\nContent-Type: application/json\nPayload: {\"message\": \"NEXUS Sandbox network fetch verified\"}"
-                }
+                val scan = RealNetworkProbe.scanHost(target)
+                scan.formattedReport
             }
-            else -> "Simulated execution completed."
+            else -> "Operation completed."
         }
     }
 
@@ -693,42 +686,101 @@ Status: HOST_UP (Verified via NEXUS Sandboxed Network Policy)"""
 
     // --- Terminal Actions ---
 
+    private var activeTerminalJob: Job? = null
+
     fun executeTerminalCommand(input: String) {
         val cmd = input.trim()
         if (cmd.isEmpty()) return
+
+        if (cmd == "clear") {
+            activeTerminalJob?.cancel()
+            _uiState.update { it.copy(terminalEntries = emptyList(), terminalCwd = terminalEngine.currentPath, isTerminalRunning = false) }
+            return
+        }
 
         addTerminalOutput(TerminalKind.CMD, cmd)
 
         val activeConv = _uiState.value.conversations.find { it.id == _uiState.value.activeConversationId }
         val activeAgent = _uiState.value.agents.find { it.id == activeConv?.agentId }
 
-        when (val res = terminalEngine.execute(cmd, _uiState.value.permissions, activeAgent)) {
-            is NexusTerminalEngine.ExecResult.Output -> {
-                if (cmd == "clear") {
-                    _uiState.update { it.copy(terminalEntries = emptyList(), terminalCwd = terminalEngine.currentPath) }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            terminalEntries = it.terminalEntries + res.lines,
+        activeTerminalJob?.cancel()
+        activeTerminalJob = viewModelScope.launch {
+            _uiState.update { it.copy(isTerminalRunning = true) }
+            try {
+                terminalEngine.executeStream(cmd, _uiState.value.permissions, activeAgent).collect { entry ->
+                    _uiState.update { s ->
+                        s.copy(
+                            terminalEntries = s.terminalEntries + entry,
                             terminalCwd = terminalEngine.currentPath
                         )
                     }
                 }
+            } catch (e: Exception) {
+                if (e is CancellationException) {
+                    addTerminalOutput(TerminalKind.WARN, "^C (Process aborted by user)")
+                } else {
+                    addTerminalOutput(TerminalKind.ERR, "Execution failed: ${e.message}")
+                }
+            } finally {
+                _uiState.update { it.copy(isTerminalRunning = false) }
+                refreshWorkspaceFiles()
+                refreshSystemInfo()
             }
-            is NexusTerminalEngine.ExecResult.RequiresApproval -> {
-                val entry = TerminalEntry(
-                    id = UUID.randomUUID().toString(),
-                    kind = TerminalKind.WARN,
-                    text = "Operation '${res.operation.label}' requires confirmation before running:",
-                    operation = res.operation
+        }
+    }
+
+    fun cancelTerminalCommand() {
+        activeTerminalJob?.cancel(CancellationException("User aborted process"))
+        _uiState.update { it.copy(isTerminalRunning = false) }
+    }
+
+    fun askAgentToDiagnoseError(commandText: String, errorText: String) {
+        viewModelScope.launch {
+            val devConv = _uiState.value.conversations.find { it.agentId == "developer" }
+                ?: _uiState.value.conversations.firstOrNull()
+
+            val diagnosisPrompt = "Terminal command failed with error:\nCommand: `$commandText`\nError: `$errorText`\nPlease diagnose the root cause and provide a clear fix or corrected command."
+
+            if (devConv != null) {
+                _uiState.update { it.copy(activeConversationId = devConv.id, currentDestination = NexusNavDestination.CHAT) }
+                sendChatMessage(diagnosisPrompt)
+            } else {
+                addTerminalOutput(TerminalKind.SYSTEM, "🤖 [Developer Agent Diagnostic]: Analyzing failure for `$commandText`...")
+                val devAgent = _uiState.value.agents.find { it.id == "developer" } ?: _uiState.value.agents.first()
+                val fallbackConv = Conversation(id = "conv_diag", title = "Diagnostic Session", agentId = devAgent.id)
+                val response = geminiProvider.processRequest(
+                    prompt = diagnosisPrompt,
+                    conversation = fallbackConv,
+                    agent = devAgent,
+                    permissions = _uiState.value.permissions
                 )
-                _uiState.update {
-                    it.copy(
-                        terminalEntries = it.terminalEntries + entry,
-                        terminalCwd = terminalEngine.currentPath
-                    )
+                val reply = when (response) {
+                    is AIResponse.Text -> response.message
+                    is AIResponse.ProposedOperation -> response.explanation
+                    is AIResponse.StructuredTaskProposal -> response.explanation
+                }
+                addTerminalOutput(TerminalKind.SYSTEM, "🤖 Fix Recommendation:\n$reply")
+            }
+        }
+    }
+
+    fun exportWorkspaceZip(workspaceSubPath: String, onComplete: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val zipFile = storageManager.exportWorkspaceToZip(workspaceSubPath)
+            withContext(Dispatchers.Main) {
+                if (zipFile != null) {
+                    onComplete("Exported archive: ${zipFile.name} (${zipFile.length()} bytes)")
+                } else {
+                    onComplete("Failed to export workspace archive.")
                 }
             }
+        }
+    }
+
+    fun testOnlineAiConnection(onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = geminiProvider.testConnection()
+            onResult(result.first, result.second)
         }
     }
 
@@ -840,6 +892,22 @@ Status: HOST_UP (Verified via NEXUS Sandboxed Network Policy)"""
     fun deleteWorkspaceItem(relativePath: String) {
         storageManager.deleteItem(relativePath)
         refreshWorkspaceFiles()
+    }
+
+    fun runWorkspaceFile(file: WorkspaceFile) {
+        val rel = file.relativePath
+        val cmd = when {
+            rel.endsWith(".py") -> "python $rel"
+            rel.endsWith(".cpp") || rel.endsWith(".c") || rel.endsWith(".cc") -> {
+                val bin = rel.substringBeforeLast(".")
+                "clang++ $rel -o $bin"
+            }
+            rel.endsWith(".sh") -> "sh $rel"
+            !file.isDirectory && !rel.contains(".") -> "./$rel"
+            else -> "cat $rel"
+        }
+        navigateTo(NexusNavDestination.TERMINAL)
+        executeTerminalCommand(cmd)
     }
 
     // --- Provider Switching ---

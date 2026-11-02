@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "PROJECT NEXUS"
+rootProject.name = "Nexus 1.0v"
 
 include(":app")

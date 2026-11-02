@@ -17,7 +17,7 @@ enum class StepStatus {
 }
 
 enum class TerminalKind {
-    CMD, OUT, BLOCKED, META, SYSTEM, WARN
+    CMD, OUT, ERR, BLOCKED, META, SYSTEM, WARN
 }
 
 enum class AIProviderType {
@@ -156,5 +156,7 @@ data class SystemInfo(
     val batteryLevel: Int,
     val isCharging: Boolean,
     val cpuCores: Int,
-    val abi: String
+    val abi: String,
+    val localIp: String = "127.0.0.1",
+    val networkState: String = "Connected"
 )
