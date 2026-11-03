@@ -1,5 +1,5 @@
 {
-  "name": "Nexus 1.0v",
+  "name": "Nexus 1.2v",
   "description": "Autonomous AI-Powered Android Terminal and Agent Environment",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

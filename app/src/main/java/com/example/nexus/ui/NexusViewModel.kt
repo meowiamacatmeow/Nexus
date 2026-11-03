@@ -348,7 +348,7 @@ Type an objective in Chat (e.g. "Set up a Python development environment"), run 
             TerminalEntry(
                 id = "t_welcome_1",
                 kind = TerminalKind.SYSTEM,
-                text = "PROJECT NEXUS [Version 0.6.0-android]\n(c) 2026 NEXUS Project. Controlled sandboxed environment.\nType 'help' for command manual, 'ps' for active tasks."
+                text = "PROJECT NEXUS [Version 1.2.0-android]\n(c) 2026 NEXUS Project. Controlled sandboxed environment.\nType 'help' for command manual, 'ps' for active tasks."
             ),
             TerminalEntry(
                 id = "t_welcome_2",

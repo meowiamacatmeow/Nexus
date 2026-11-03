@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Nexus 1.0v"
+rootProject.name = "Nexus 1.2v"
 
 include(":app")

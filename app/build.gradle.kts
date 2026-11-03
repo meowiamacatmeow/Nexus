@@ -16,8 +16,8 @@ android {
     applicationId = "com.aistudio.nexus.kpzwqx"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0v"
+    versionCode = 3
+    versionName = "1.2v"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
